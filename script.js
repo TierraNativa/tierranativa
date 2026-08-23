@@ -342,15 +342,19 @@ function _escalaForceContadoUI() {
   if (hint) hint.style.display = "none";
 }
 
-async function _escalaFijar() {
+async function _escalaFijar(dtoOverride) {
   if (!_escalaActiva || !customerProfile) return;
+  // El dto a fijar es el que USÓ el pedido, capturado antes de vaciar el carrito.
+  // Sin el override, customerProfile.dto_vol ya fue recalculado a 0% (carrito vacío).
+  var dto = dtoOverride != null ? Number(dtoOverride) : Number(customerProfile.dto_vol || 0);
   try {
     await supabaseClient.rpc("fijar_dto_escala", {
       p_customer_id: customerProfile.id,
-      p_dto: customerProfile.dto_vol
+      p_dto: dto
     });
     _escalaActiva = false;
     customerProfile.escala_activa = false;
+    customerProfile.dto_vol = dto; // dejar el dto fijo también en memoria (coherente con DB)
   } catch (e) {
     console.error("fijar_dto_escala error:", e);
   }
@@ -10136,6 +10140,16 @@ async function submitOrder() {
       }
     }
 
+    // Escala activa: capturar el dto REAL del pedido ANTES de vaciar el carrito.
+    // Si no, updateCart() (post-reset) recalcula dto_vol sobre un carrito vacío
+    // (subtotal 0 → 0%) y _escalaFijar terminaría fijando 0% permanente.
+    var _escalaDtoParaFijar =
+      _escalaActiva && primaryResult
+        ? Number(primaryResult.dtoVol || 0)
+        : customerProfile
+          ? Number(customerProfile.dto_vol || 0)
+          : 0;
+
     // ---- Reset UI ----
     // Salir del modo edición (si venía de "Editar Pedido").
     setEditingOrderId(null);
@@ -10186,9 +10200,9 @@ async function submitOrder() {
 
     showSection("pedidoConfirmado");
 
-    // Escala activa: fijar el dto definitivo y apagar el flag.
+    // Escala activa: fijar el dto definitivo (el que usó el pedido) y apagar el flag.
     if (_escalaActiva) {
-      _escalaFijar().catch(function (e) { console.error("escalaFijar:", e); });
+      _escalaFijar(_escalaDtoParaFijar).catch(function (e) { console.error("escalaFijar:", e); });
     }
 
     // EXPO: chip con el N° de pedido (prueba de que quedó grabado) + panel de cierre.
