@@ -12209,6 +12209,8 @@ async function onLinkedCustomerSelected(opts) {
 
     if (_vendorOwnProfile) {
       customerProfile = Object.assign({}, _vendorOwnProfile);
+      // Volver a la lista del propio vendedor/admin al soltar al cliente.
+      customerList = Number(_vendorOwnProfile.lista) || 1;
     }
     // Solo limpiar carrito si realmente cambió el cliente Y no es restore
     if (!fromRestore && isRealChangeSelf) {
@@ -12330,7 +12332,7 @@ async function onLinkedCustomerSelected(opts) {
   var result = await supabaseClient
     .from("customers")
     .select(
-      "id,business_name,dto_vol,cod_cliente,cuit,direccion_fiscal,localidad,vend,mail,debt,payment_term,credit_limit,escala_activa",
+      "id,business_name,dto_vol,cod_cliente,cuit,direccion_fiscal,localidad,vend,mail,debt,payment_term,credit_limit,escala_activa,lista",
     )
     .eq("id", customerId)
     .maybeSingle();
@@ -12341,6 +12343,9 @@ async function onLinkedCustomerSelected(opts) {
   }
 
   customerProfile = result.data;
+  // Precio según la lista del CLIENTE elegido (no la del admin/vendedor). Sin
+  // esto, pedir para un cliente de lista 2 mostraba precios de lista 1.
+  customerList = Number(result.data.lista) || 1;
 
   // Limpiar carrito SOLO si el cliente realmente CAMBIÓ Y no es restore.
   if (!fromRestore && isRealChange) {
