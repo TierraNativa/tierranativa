@@ -14731,28 +14731,26 @@ a.user-menu-item:hover {
 .escala-contado-text span { font-size: 12px; }
 .escala-cp-wrap { margin-top: 12px; }
 
-/* ── Botón traducción chino mandarín — pill translúcido sobre el header oscuro ── */
+/* ── Botón traducción chino — texto liviano, integrado al nav (no compite con los CTAs) ── */
 .btn-translate-cn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 5px;
   height: 36px;
-  padding: 0 14px;
-  border-radius: 10px;
+  padding: 0 6px;
+  border: none;
+  background: none;
+  border-radius: 8px;
   font-size: 14px;
   line-height: 1;
   cursor: pointer;
   white-space: nowrap;
   box-sizing: border-box;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  transition: background .15s, border-color .15s;
+  color: rgba(255, 255, 255, 0.8);
+  transition: color .15s;
 }
 .btn-translate-cn:hover {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: rgba(255, 255, 255, 0.6);
+  color: #fff;
 }
 /* En el header mobile el botón de idioma es solo el ícono 🌐 (como los demás micon) */
 .micon-btn.micon-translate {
