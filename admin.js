@@ -851,12 +851,17 @@ document
           document.getElementById("manualCuit").value,
         );
       }
+      var escalaChk = document.getElementById("manualEscalaActiva");
+      var escalaOn = escalaChk && escalaChk.checked;
+      var manualListaEl = document.getElementById("manualLista");
       var payload = {
         cod_cliente: cod,
         business_name: razon,
         cuit: cuitForPayload,
         vend: document.getElementById("manualVend").value.trim(),
-        dto_vol: isNaN(dto) ? null : dto / 100,
+        dto_vol: escalaOn ? 0 : (isNaN(dto) ? null : dto / 100),
+        escala_activa: !!escalaOn,
+        lista: Number(manualListaEl && manualListaEl.value) || 1,
         mail: document.getElementById("manualMail").value.trim(),
         pin: generatePin(),
       };
@@ -886,6 +891,10 @@ document
         chkReset.checked = false;
         chkReset.dispatchEvent(new Event("change"));
       }
+      var escalaReset = document.getElementById("manualEscalaActiva");
+      if (escalaReset) escalaReset.checked = false;
+      var listaReset = document.getElementById("manualLista");
+      if (listaReset) listaReset.value = "1";
     } catch (err) {
       toast("Error: " + err.message, "error");
     } finally {
@@ -1379,6 +1388,10 @@ window.openEditModal = function (clienteId) {
   document.getElementById("editVend").value = c.vend || "";
   document.getElementById("editDto").value =
     c.dto_vol != null ? (c.dto_vol * 100).toFixed(0) : "";
+  var editEscChk = document.getElementById("editEscalaActiva");
+  if (editEscChk) editEscChk.checked = !!c.escala_activa;
+  var editListaEl = document.getElementById("editLista");
+  if (editListaEl) editListaEl.value = String(Number(c.lista) || 1);
   document.getElementById("editUsername").value = c.username || "";
   document.getElementById("editClienteModal").style.display = "flex";
 };
@@ -1398,13 +1411,18 @@ document
       .getElementById("editUsername")
       .value.trim()
       .toLowerCase();
+    var editEscChk = document.getElementById("editEscalaActiva");
+    var editEscalaOn = editEscChk && editEscChk.checked;
+    var editListaEl = document.getElementById("editLista");
     var payload = {
       cod_cliente: document.getElementById("editCod").value.trim(),
       cuit: cleanCuit(document.getElementById("editCuit").value),
       business_name: document.getElementById("editRazon").value.trim(),
       mail: document.getElementById("editMail").value.trim(),
       vend: document.getElementById("editVend").value.trim(),
-      dto_vol: isNaN(dto) ? null : dto / 100,
+      dto_vol: editEscalaOn ? 0 : (isNaN(dto) ? null : dto / 100),
+      escala_activa: !!editEscalaOn,
+      lista: Number(editListaEl && editListaEl.value) || 1,
       username: editUsernameVal || null,
     };
     if (!payload.cod_cliente) {
@@ -8592,9 +8610,12 @@ async function cargarEscalaExpo() {
   if (!body) return;
   _escalaExpoWireOnce();
   body.innerHTML = "";
+  // Este editor administra SOLO la escala de lista 2 (clientes de expo / lista 2).
+  // La escala de lista 1 vive en las mismas filas con lista=1 y no se toca acá.
   var r = await sb
     .from("expo_dto_escala")
     .select("desde,dto")
+    .eq("lista", 2)
     .order("desde", { ascending: true });
   if (r.error) {
     _escalaExpoStatus("Error al cargar: " + r.error.message, true);
@@ -8644,7 +8665,7 @@ async function guardarEscalaExpo() {
       bad = true;
       return;
     }
-    rows.push({ desde: d, dto: p / 100 });
+    rows.push({ desde: d, dto: p / 100, lista: 2 });
   });
   if (bad || !rows.length) {
     _escalaExpoStatus(
@@ -8658,7 +8679,8 @@ async function guardarEscalaExpo() {
   });
   _escalaExpoStatus("Guardando…");
   try {
-    var del = await sb.from("expo_dto_escala").delete().gte("desde", 0);
+    // Borra e inserta SOLO lista 2 — no pisar la escala de lista 1.
+    var del = await sb.from("expo_dto_escala").delete().eq("lista", 2);
     if (del.error) throw del.error;
     var ins = await sb.from("expo_dto_escala").insert(rows);
     if (ins.error) throw ins.error;

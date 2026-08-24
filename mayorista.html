@@ -18,14 +18,27 @@
       name="description"
       content="Catálogo mayorista de Tierra Nativa SA. Cuadros, portarretratos y objetos de decoración. Consultá precios y hacé tu pedido online."
     />
-    <link rel="stylesheet" href="css/styles.css?v=2737" />
-    <link rel="stylesheet" href="css/analisis-venta-cliente.css?v=2737" />
+    <link rel="stylesheet" href="css/styles.css?v=2742" />
+    <link rel="stylesheet" href="css/analisis-venta-cliente.css?v=2742" />
     <link rel="icon" type="image/png" href="img/favicon.png" />
     <link rel="icon" href="img/favicon.png" />
     <link rel="shortcut icon" href="img/favicon.png" />
   </head>
 
   <body class="avc-customer-mode">
+    <!-- Google Translate -->
+    <div id="google_translate_element" style="display:none"></div>
+    <script>
+    function googleTranslateElementInit(){
+      new google.translate.TranslateElement({
+        pageLanguage:'es',
+        includedLanguages:'zh-CN',
+        autoDisplay:false
+      },'google_translate_element');
+    }
+    </script>
+    <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
     <header class="header">
       <div class="logo">
         <a href="index.html">
@@ -86,6 +99,12 @@
 
         <!-- ✅ MOBILE ICONS: Carrito + Perfil -->
         <div id="mobileIcons" class="mobile-icons" aria-label="Accesos rápidos">
+          <button class="micon-btn btn-translate-cn" type="button"
+            aria-label="翻译成中文"
+            onclick="toggleChineseTranslate()"
+            style="font-size:14px; border:none; padding:2px 6px;"
+          >🇨🇳</button>
+
           <button
             id="mobileCartBtn"
             class="micon-btn micon-cart"
@@ -111,6 +130,11 @@
 
         <!-- DERECHA (desktop): CTA + Login o UserBox -->
         <div class="nav-right">
+          <button type="button" class="btn-translate-cn"
+            onclick="toggleChineseTranslate()"
+            title="翻译成中文 — Traducir a Chino"
+          >🇨🇳 中文</button>
+
           <a
             id="ctaCliente"
             class="btn-quiero-cliente"
@@ -1773,10 +1797,10 @@
     </button>
 
     <!-- Tu JS -->
-    <script src="./version.js?v=2737"></script>
-    <script src="script.js?v=2737"></script>
+    <script src="./version.js?v=2742"></script>
+    <script src="script.js?v=2742"></script>
     <!-- Análisis Venta Cliente embebido en #perfil (modo customer view) -->
-    <script src="analisis-venta-cliente.js?v=2737"></script>
+    <script src="analisis-venta-cliente.js?v=2742"></script>
     <!-- ==================== MODALES EXPO ==================== -->
     <!-- Modal EXPO: Elegir cliente -->
     <div id="expoPickModal" class="modal hidden" aria-hidden="true">
