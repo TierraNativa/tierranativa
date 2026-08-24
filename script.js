@@ -25,7 +25,7 @@ const NOTIFY_NEW_ADDRESS_URL =
 /***********************
  * UI CONSTANTS
  ***********************/
-let WEB_ORDER_DISCOUNT = 0.02; // default fallback
+let WEB_ORDER_DISCOUNT = 0; // Tierra Nativa: sin descuento por pedido web
 const UPSELL_DISCOUNT = 0.3; // Descuento extra aplicado al pedido "promo" (items agregados desde popup upsell). Se graba como pedido separado (X+1).
 
 // EXPO: multiplicador de descuento web para las previews de "Tu precio contado".
@@ -2698,19 +2698,10 @@ function splitMedidas(all) {
 }
 
 async function getWebOrderDiscount() {
-  try {
-    const { data, error } = await supabaseClient
-      .from("app_settings")
-      .select("value")
-      .eq("key", "web_order_discount")
-      .single();
-
-    if (error) throw error;
-    return Number(data?.value) || 0;
-  } catch (e) {
-    console.warn("No se pudo leer web_order_discount, usando default 0.02", e);
-    return 0.02;
-  }
+  // Tierra Nativa NO tiene descuento por pedido web: siempre 0.
+  // (Antes se leía de app_settings.web_order_discount con fallback 2%, lo que
+  // hacía que los precios se calcularan con 2% de más.)
+  return 0;
 }
 
 /***********************

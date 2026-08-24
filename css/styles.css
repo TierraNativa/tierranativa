@@ -14770,6 +14770,13 @@ a.user-menu-item:hover {
 .skiptranslate { display: none !important; }
 body { top: 0 !important; }
 
+/* Tierra Nativa no tiene 2% de descuento web: ocultar el aviso y la línea de totales
+   (tienen "2%" hardcodeado; el cálculo ya usa 0). */
+#webNoteBox,
+#webDiscountLine {
+  display: none !important;
+}
+
 /* ── Filtros: acciones (Limpiar + Aplicar) en fila ── */
 .filters-actions {
   display: flex;
