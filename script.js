@@ -6965,6 +6965,37 @@ function cancelPendingFilters() {
   closeFiltersOverlay();
 }
 
+// Limpia TODOS los filtros (surtido, nuevos, medidas, categorías, orden y búsqueda)
+// y vuelve al estado por defecto. Deja el panel abierto para ver el reseteo.
+function limpiarFiltros() {
+  filterAll = true;
+  filterCats.clear();
+  filterMedidas = new Set();
+  filterNewOnly = false;
+  filterMyAssortment = false;
+  sortMode = "category";
+  pendingFilterAll = true;
+  pendingFilterCats = new Set();
+  pendingFilterMedidas = new Set();
+  pendingFilterNewOnly = false;
+
+  // Limpiar buscador
+  searchTerm = "";
+  if (typeof setSearchInputValue === "function") setSearchInputValue("");
+
+  // Sincronizar UI
+  if (typeof syncMyAssortmentBtn === "function") syncMyAssortmentBtn();
+  if (typeof applySortUI === "function") applySortUI();
+  var bNew = document.getElementById("btnFilterNew");
+  if (bNew) bNew.classList.remove("on");
+  var banner = document.getElementById("assortmentBanner");
+  if (banner) banner.style.display = "none";
+
+  if (typeof renderFiltersOverlayUI === "function") renderFiltersOverlayUI();
+  renderProducts();
+}
+window.limpiarFiltros = limpiarFiltros;
+
 // Panel FILTROS (mobile): Mi surtido + Nuevos + Ordenamiento
 // (las categorías van en el panel separado renderCategoriasOverlayUI)
 function renderFiltersOverlayUI() {
@@ -13545,6 +13576,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     cancelPendingFilters(),
   );
   $("filtersApplyBtn")?.addEventListener("click", () => applyPendingFilters());
+  $("filtersClearBtn")?.addEventListener("click", () => limpiarFiltros());
 
   $("filtersOverlay")?.addEventListener("click", (e) => {
     if (e.target.id === "filtersOverlay") closeFiltersOverlay();
@@ -14169,32 +14201,59 @@ document.addEventListener("keydown", function (e) {
 /***********************
  * TRADUCCIÓN A CHINO MANDARÍN (Google Translate)
  ***********************/
-function toggleChineseTranslate() {
-  var frame = document.querySelector(".goog-te-menu-frame");
-  if (frame) {
-    var combo = document.querySelector(".goog-te-combo");
-    if (combo) {
-      if (combo.value === "zh-CN") {
-        document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
-        document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=." + location.hostname;
-        location.reload();
-      } else {
-        combo.value = "zh-CN";
-        combo.dispatchEvent(new Event("change"));
-      }
-      return;
+// ¿La página está traducida a chino ahora mismo?
+function _cnIsActive() {
+  if (/googtrans=[^;]*zh-CN/.test(document.cookie)) return true;
+  var combo = document.querySelector(".goog-te-combo");
+  return !!(combo && combo.value === "zh-CN");
+}
+
+// Refleja el estado en los botones: en chino → ofrece "Español"; en español → ofrece "中文".
+function _cnUpdateBtnLabels() {
+  var active = _cnIsActive();
+  document.querySelectorAll(".btn-translate-cn").forEach(function (btn) {
+    if (btn.classList.contains("micon-translate")) {
+      // Mobile: solo ícono, cambia el aria-label.
+      btn.setAttribute("aria-label", active ? "Volver a español" : "翻译成中文");
+    } else {
+      btn.textContent = active ? "🌐 Español" : "🌐 中文";
     }
+  });
+}
+window._cnUpdateBtnLabels = _cnUpdateBtnLabels;
+
+function toggleChineseTranslate() {
+  // Si ya está en chino → volver a español (limpia cookie y recarga).
+  if (_cnIsActive()) {
+    document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
+    document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=." + location.hostname;
+    location.reload();
+    return;
+  }
+  // Ir a chino.
+  var combo = document.querySelector(".goog-te-combo");
+  if (combo) {
+    combo.value = "zh-CN";
+    combo.dispatchEvent(new Event("change"));
+    setTimeout(_cnUpdateBtnLabels, 300);
+    return;
   }
   var tries = 0;
   var iv = setInterval(function () {
-    var combo = document.querySelector(".goog-te-combo");
-    if (combo) {
+    var c = document.querySelector(".goog-te-combo");
+    if (c) {
       clearInterval(iv);
-      combo.value = "zh-CN";
-      combo.dispatchEvent(new Event("change"));
+      c.value = "zh-CN";
+      c.dispatchEvent(new Event("change"));
+      setTimeout(_cnUpdateBtnLabels, 300);
     }
     if (++tries > 40) clearInterval(iv);
   }, 100);
 }
 window.toggleChineseTranslate = toggleChineseTranslate;
+
+// Al cargar: si la página vino ya traducida (cookie persistida), reflejarlo en el botón.
+document.addEventListener("DOMContentLoaded", function () {
+  setTimeout(_cnUpdateBtnLabels, 500);
+});
 
