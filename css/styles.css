@@ -14731,25 +14731,99 @@ a.user-menu-item:hover {
 .escala-contado-text span { font-size: 12px; }
 .escala-cp-wrap { margin-top: 12px; }
 
-/* ── Botón traducción chino mandarín ── */
+/* ── Botón traducción chino mandarín — pill translúcido sobre el header oscuro ── */
 .btn-translate-cn {
-  background: none;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 5px 10px;
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1;
   cursor: pointer;
-  color: #374151;
   white-space: nowrap;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
   transition: background .15s, border-color .15s;
 }
 .btn-translate-cn:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+/* En el header mobile el botón de idioma es solo el ícono 🌐 (como los demás micon) */
+.micon-btn.micon-translate {
+  height: auto;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  font-size: 18px;
+  line-height: 1;
+}
+.micon-btn.micon-translate:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
 }
 /* Ocultar la barra superior de Google Translate */
 .skiptranslate { display: none !important; }
 body { top: 0 !important; }
+
+/* ── Filtros: acciones (Limpiar + Aplicar) en fila ── */
+.filters-actions {
+  display: flex;
+  gap: 10px;
+}
+.filters-clear {
+  flex: 1;
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid #e2e5ea;
+  background: #f3f4f6;
+  color: #374151;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.filters-clear:hover {
+  background: #e6e9ee;
+}
+.filters-apply {
+  flex: 1;
+}
+
+/* ── Buscador + botón Filtros (mobile): más contraste y foco ── */
+@media (max-width: 900px) {
+  .mpb-search {
+    background: #fff !important;
+    border: 1px solid #dfe3e8 !important;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .mpb-search:focus-within {
+    border-color: #35546f !important;
+    box-shadow: 0 0 0 3px rgba(53, 84, 111, 0.15);
+  }
+  .mpb-ico {
+    color: #35546f;
+  }
+  /* "Filtros" como acción de marca (azul del header) */
+  #openFiltersBtn.mpb-btn {
+    background: #35546f !important;
+    border-color: #35546f !important;
+    color: #fff !important;
+  }
+  #openFiltersBtn.mpb-btn .mpb-btn-ico {
+    color: #fff !important;
+  }
+  #openFiltersBtn.mpb-btn:hover {
+    background: #2c485f !important;
+    border-color: #2c485f !important;
+  }
+}
 
 .expo-btn:hover {
   filter: brightness(0.95);
