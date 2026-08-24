@@ -173,7 +173,7 @@ function loadJsQR() {
   if (jsqrLoading) return jsqrLoading;
   jsqrLoading = new Promise(function (res, rej) {
     var s = document.createElement("script");
-    s.src = "jsqr.js?v=2737";              // debe estar en la misma carpeta (está en los 3 repos)
+    s.src = "jsqr.js?v=2738";              // debe estar en la misma carpeta (está en los 3 repos)
     s.onload = res; s.onerror = function () { rej(new Error("No se pudo cargar jsqr.js (¿está en la carpeta?)")); };
     document.head.appendChild(s);
   });

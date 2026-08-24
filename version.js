@@ -5,7 +5,7 @@
 //     git config core.hooksPath hooks
 // El formato tiene que ser MAJOR.MINOR.PATCH numérico: el hook le suma 1 al
 // patch con aritmética de shell, así que un sufijo de texto lo rompe.
-const APP_VERSION = "2.7.37";
+const APP_VERSION = "2.7.38";
 // Expuesto para reusar la MISMA versión en subpáginas (p. ej. el Formato OSA),
 // así con cambiar solo esta línea se actualiza todo.
 window.APP_VERSION = APP_VERSION;
