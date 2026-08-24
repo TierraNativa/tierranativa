@@ -3551,8 +3551,10 @@ async function refreshAuthState(sessionOverride) {
   if (!razonSocial && customerProfile?.cod_cliente) {
     razonSocial = `Cliente ${customerProfile.cod_cliente}`;
   }
-  if ($("helloNavText"))
-    $("helloNavText").innerText = razonSocial ? `Hola, ${razonSocial} !` : "Hola!";
+  if ($("helloNavText")) {
+    const _saludoNombre = razonSocial || (isAdmin ? "Tierra Nativa" : "");
+    $("helloNavText").innerText = _saludoNombre ? `Hola, ${_saludoNombre} !` : "Hola!";
+  }
 
   if ($("menuMyOrders")) $("menuMyOrders").style.display = "block";
 
@@ -11791,10 +11793,10 @@ function renderCustomerSelector() {
   var existingZone = document.getElementById("csVendorZone");
   if (existingZone) existingZone.remove();
 
-  // EXPO: reemplaza el selector "Elegir razón social" por la barra
-  // [Elegir cliente] [+ Nuevo cliente]. Solo para el operador admin.
+  // La expo terminó: el admin solo administra, ya no elige ni crea clientes
+  // desde la tienda (eso se hace en el panel). Sin la barra de operador, el
+  // desktop vuelve al layout normal (sort-row + Filtros prolijo).
   if (EXPO_MODE && isAdmin) {
-    renderExpoEntryBar();
     return;
   }
 
@@ -12278,6 +12280,7 @@ async function onLinkedCustomerSelected(opts) {
     } catch (e) {}
 
     var nameSelf = (customerProfile && customerProfile.business_name || "").trim();
+    if (!nameSelf && isAdmin) nameSelf = "Tierra Nativa";
     var helloElSelf = $("helloNavText");
     if (helloElSelf)
       helloElSelf.innerText = nameSelf ? "Hola, " + nameSelf + " !" : "Hola!";
