@@ -60,17 +60,14 @@ END;
 $$;
 
 -- 4. Tramos de descuento por volumen para Tierra Nativa
--- IMPORTANTE: estos son los mismos tramos que LK. Recalcular para esta empresa
--- según lo que decida el dueño. Se pueden cambiar después desde el panel o SQL.
--- Solo insertar si la tabla está vacía (no pisar tramos ya configurados).
-INSERT INTO public.expo_dto_escala (desde, dto)
-SELECT * FROM (VALUES
+-- Escala de descuento por volumen de Tierra Nativa (estirada, tope 25%).
+-- OJO: esta tabla la comparten el módulo Expo y la escala activa. Este bloque
+-- REEMPLAZA la escala completa. Los umbrales van sobre subtotal de LISTA 2.
+DELETE FROM public.expo_dto_escala;
+INSERT INTO public.expo_dto_escala (desde, dto) VALUES
   (0::numeric,       0::numeric),
-  (600000::numeric,  0.02::numeric),
-  (1000000::numeric, 0.04::numeric),
-  (1500000::numeric, 0.06::numeric),
-  (2300000::numeric, 0.08::numeric),
-  (4000000::numeric, 0.10::numeric),
-  (6000000::numeric, 0.12::numeric)
-) AS v(desde, dto)
-WHERE NOT EXISTS (SELECT 1 FROM public.expo_dto_escala LIMIT 1);
+  (1000000::numeric, 0.05::numeric),
+  (2000000::numeric, 0.10::numeric),
+  (3500000::numeric, 0.15::numeric),
+  (5500000::numeric, 0.20::numeric),
+  (8000000::numeric, 0.25::numeric);
