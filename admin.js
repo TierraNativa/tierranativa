@@ -409,54 +409,43 @@ async function createAuthUser(cuit, pin) {
   if (!cuit) return null;
   var digits = cuit.replace(/[^0-9]/g, "");
   if (!digits) return null;
-  var email = digits + "@cuit.tierranativa";
-  var tmpClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY,
-    {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-      },
-    },
-  );
-  var result = await tmpClient.auth.signUp({ email: email, password: pin });
-  if (result.error) {
-    // Si el usuario ya existe, intentar login para obtener su id
-    if (result.error.message.toLowerCase().includes("already registered")) {
-      var loginResult = await tmpClient.auth.signInWithPassword({
-        email: email,
-        password: pin,
-      });
-      if (!loginResult.error && loginResult.data.user) {
-        return loginResult.data.user.id;
-      }
-      // Si no puede loguearse (pin distinto), avisar pero no bloquear
-      console.warn(
-        "Usuario auth ya existe para " + digits + " pero con PIN distinto",
-      );
-      toast(
-        "Aviso: ya existe usuario auth para este CUIT con otro PIN",
-        "warning",
-      );
+  // El alta del usuario auth va por la Edge Function crear-cliente-auth
+  // (service_role -> auth.admin.createUser), NO por signUp: Supabase rechaza el
+  // dominio sintético @cuit.tierranativa en signUp ("Email address is invalid").
+  try {
+    var sess = await sb.auth.getSession();
+    var token =
+      sess && sess.data && sess.data.session
+        ? sess.data.session.access_token
+        : null;
+    if (!token) {
+      toast("Aviso: cliente se creará sin acceso login (sin sesión)", "warning");
       return null;
     }
-    console.warn(
-      "No se pudo crear usuario auth para " +
-        digits +
-        ": " +
-        result.error.message,
-    );
-    toast(
-      "Aviso: cliente se creará sin acceso login (" +
-        result.error.message +
-        ")",
-      "warning",
-    );
+    var res = await fetch(SUPABASE_URL + "/functions/v1/crear-cliente-auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: "Bearer " + token,
+      },
+      body: JSON.stringify({ cuit: digits, pin: pin }),
+    });
+    var data = await res.json().catch(function () {
+      return {};
+    });
+    if (!res.ok || !data.id) {
+      var em = data.error || "http_" + res.status;
+      console.warn("createAuthUser crear-cliente-auth:", em);
+      toast("Aviso: cliente se creará sin acceso login (" + em + ")", "warning");
+      return null;
+    }
+    return data.id;
+  } catch (e) {
+    console.warn("createAuthUser error:", e);
+    toast("Aviso: cliente se creará sin acceso login (red)", "warning");
     return null;
   }
-  return result.data.user ? result.data.user.id : null;
 }
 
 function toast(msg, type) {
