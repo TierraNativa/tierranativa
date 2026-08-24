@@ -14777,6 +14777,21 @@ body { top: 0 !important; }
   display: none !important;
 }
 
+/* Pedido: columna izquierda compacta para que entre toda la info en una pantalla
+   (desktop). El scroll queda para el detalle/banner de abajo. */
+@media (min-width: 901px) {
+  #carrito .cart-col-left { gap: 10px !important; }
+  #carrito .cart-col-left .ship-row { margin: 0 auto !important; }
+  #carrito .cart-col-left .ship-card,
+  #carrito .cart-col-left .pay-card { padding: 9px 14px !important; }
+  #carrito .cart-col-left .ship-card { gap: 4px !important; }
+  #carrito .cart-col-left .pay-title { margin-bottom: 6px !important; }
+  #carrito .cart-col-left .payment-buttons.payment-6 { gap: 7px !important; }
+  #carrito .cart-col-left .payment-buttons.payment-6 .pay-btn { padding: 6px 6px !important; }
+  #carrito .cart-col-left .pay-btn-full { margin-top: 7px !important; padding: 8px !important; }
+  #carrito .cart-col-left .ship-hint { margin-top: 2px !important; }
+}
+
 /* ── Filtros: acciones (Limpiar + Aplicar) en fila ── */
 .filters-actions {
   display: flex;
