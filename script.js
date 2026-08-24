@@ -1544,22 +1544,45 @@ function _expoNewGenPin() {
 
 // Crea el usuario auth con un cliente aparte (no pisa la sesión del operador).
 async function _expoCreateAuthUser(cuit, pin) {
+  // El alta del usuario auth va por la Edge Function crear-cliente-auth
+  // (service_role -> auth.admin.createUser), NO por signUp: Supabase rechaza el
+  // dominio sintético @cuit.tierranativa en signUp ("Email address is invalid").
   var digits = String(cuit || "").replace(/[^0-9]/g, "");
   if (!digits) return null;
-  var email = digits + "@cuit.tierranativa";
-  var tmp = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-  });
-  var res = await tmp.auth.signUp({ email: email, password: pin });
-  if (res.error) {
-    if (res.error.message.toLowerCase().includes("already registered")) {
-      var lg = await tmp.auth.signInWithPassword({ email: email, password: pin });
-      if (!lg.error && lg.data.user) return lg.data.user.id;
+  try {
+    var sess = await supabaseClient.auth.getSession();
+    var token =
+      sess && sess.data && sess.data.session
+        ? sess.data.session.access_token
+        : null;
+    if (!token) {
+      console.warn("expo auth: sin sesión de admin para crear el login");
+      return null;
     }
-    console.warn("expo auth signup:", res.error.message);
+    var res = await fetch(SUPABASE_URL + "/functions/v1/crear-cliente-auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: "Bearer " + token,
+      },
+      body: JSON.stringify({ cuit: digits, pin: pin }),
+    });
+    var data = await res.json().catch(function () {
+      return {};
+    });
+    if (!res.ok || !data.id) {
+      console.warn(
+        "expo auth crear-cliente-auth:",
+        data.error || "http_" + res.status,
+      );
+      return null;
+    }
+    return data.id;
+  } catch (e) {
+    console.warn("expo auth error:", e);
     return null;
   }
-  return res.data.user ? res.data.user.id : null;
 }
 
 function _expoNewStatus(msg, kind) {
