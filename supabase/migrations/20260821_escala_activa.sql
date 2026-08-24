@@ -59,15 +59,30 @@ BEGIN
 END;
 $$;
 
--- 4. Tramos de descuento por volumen para Tierra Nativa
--- Escala de descuento por volumen de Tierra Nativa (estirada, tope 25%).
--- OJO: esta tabla la comparten el módulo Expo y la escala activa. Este bloque
--- REEMPLAZA la escala completa. Los umbrales van sobre subtotal de LISTA 2.
-DELETE FROM public.expo_dto_escala;
-INSERT INTO public.expo_dto_escala (desde, dto) VALUES
-  (0::numeric,       0::numeric),
-  (1000000::numeric, 0.05::numeric),
-  (2000000::numeric, 0.10::numeric),
-  (3500000::numeric, 0.15::numeric),
-  (5500000::numeric, 0.20::numeric),
-  (8000000::numeric, 0.25::numeric);
+-- 4. Escala por LISTA
+-- La tabla la comparten el módulo Expo y la escala activa. Cada tramo lleva la
+-- lista a la que aplica: el pricing (getPriceForCustomer) y la escala usan la
+-- misma lista del cliente. Mismos umbrales de plata, distinto techo:
+--   lista 2 → tope 25% · lista 1 → tope 12%
+ALTER TABLE public.expo_dto_escala
+  ADD COLUMN IF NOT EXISTS lista int NOT NULL DEFAULT 2;
+
+-- LISTA 2 (clientes de expo / lista 2) — tope 25%
+DELETE FROM public.expo_dto_escala WHERE lista = 2;
+INSERT INTO public.expo_dto_escala (desde, dto, lista) VALUES
+  (0::numeric,       0::numeric,    2),
+  (1000000::numeric, 0.05::numeric, 2),
+  (2000000::numeric, 0.10::numeric, 2),
+  (3500000::numeric, 0.15::numeric, 2),
+  (5500000::numeric, 0.20::numeric, 2),
+  (8000000::numeric, 0.25::numeric, 2);
+
+-- LISTA 1 — mismos umbrales, tope 12%
+DELETE FROM public.expo_dto_escala WHERE lista = 1;
+INSERT INTO public.expo_dto_escala (desde, dto, lista) VALUES
+  (0::numeric,       0::numeric,    1),
+  (1000000::numeric, 0.03::numeric, 1),
+  (2000000::numeric, 0.05::numeric, 1),
+  (3500000::numeric, 0.08::numeric, 1),
+  (5500000::numeric, 0.10::numeric, 1),
+  (8000000::numeric, 0.12::numeric, 1);

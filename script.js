@@ -149,18 +149,39 @@ function _expoEsc(s) {
 }
 
 // Carga la escala de descuento por volumen (una vez).
+// La tabla tiene tramos por LISTA (columna `lista`): lista 1 (tope 12%) y
+// lista 2 (tope 25%). Se cargan todos y se filtran por cliente en _expoScaleForList.
 async function _expoLoadScale() {
   if (_expoScale) return _expoScale;
   try {
     var r = await supabaseClient
       .from("expo_dto_escala")
-      .select("desde,dto")
+      .select("desde,dto,lista")
       .order("desde", { ascending: true });
     _expoScale = r.error ? [] : (r.data || []);
   } catch (e) {
     _expoScale = [];
   }
   return _expoScale;
+}
+
+// Lista efectiva para elegir la escala: cliente nuevo de expo o lista 2 → 2; resto → 1.
+// Mismo criterio que getPriceForCustomer, para que tramo y precio usen la misma lista.
+function _expoEffectiveList() {
+  return (_expoClientMode || Number(customerList) === 2) ? 2 : 1;
+}
+
+// Tramos de la escala para la lista del cliente actual, ordenados por `desde`.
+// Fallback: si las filas no tienen columna `lista` (datos viejos), usa todas.
+function _expoScaleForList() {
+  var L = _expoEffectiveList();
+  var rows = (_expoScale || []).filter(function (t) {
+    return Number(t.lista) === L;
+  });
+  if (!rows.length) rows = (_expoScale || []).slice();
+  return rows.sort(function (a, b) {
+    return Number(a.desde) - Number(b.desde);
+  });
 }
 
 // Subtotal de LISTA del carrito (sin dto): base para elegir el tramo.
@@ -176,11 +197,12 @@ function _expoListSubtotal() {
   return s;
 }
 
-// dto (fracción) que corresponde a un subtotal según la escala.
+// dto (fracción) que corresponde a un subtotal según la escala de la lista del cliente.
 function _expoScaleDtoFor(sub) {
-  if (!_expoScale || !_expoScale.length) return 0;
+  var scale = _expoScaleForList();
+  if (!scale.length) return 0;
   var dto = 0;
-  _expoScale.forEach(function (t) {
+  scale.forEach(function (t) {
     if (sub >= Number(t.desde)) dto = Number(t.dto);
   });
   return dto;
@@ -209,10 +231,10 @@ function _expoEnsureOption(id, label) {
 }
 
 function _expoNextTier(sub) {
-  if (!_expoScale) return null;
-  for (var i = 0; i < _expoScale.length; i++) {
-    if (Number(_expoScale[i].desde) > sub) {
-      return { dto: Number(_expoScale[i].dto), falta: Number(_expoScale[i].desde) - sub };
+  var scale = _expoScaleForList();
+  for (var i = 0; i < scale.length; i++) {
+    if (Number(scale[i].desde) > sub) {
+      return { dto: Number(scale[i].dto), falta: Number(scale[i].desde) - sub };
     }
   }
   return null;
@@ -243,11 +265,10 @@ function _expoCompact(n) {
 
 // Barra de progreso de descuento por volumen (escala activa self-service)
 function _escalaRenderCheckpoints() {
-  if (!_escalaActiva || !_expoScale || !_expoScale.length) return;
+  if (!_escalaActiva) return;
+  var tiers = _expoScaleForList();
+  if (!tiers.length) return;
 
-  var tiers = _expoScale.slice().sort(function (a, b) {
-    return Number(a.desde) - Number(b.desde);
-  });
   var sub = _expoListSubtotal();
   var n = tiers.length;
   var curIdx = 0;
@@ -365,13 +386,11 @@ async function _escalaFijar(dtoOverride) {
 function _expoRenderCheckpoints() {
   var cp = document.getElementById("expoCheckpoints");
   if (!cp) return;
-  if (!_expoClientMode || !_expoScale || !_expoScale.length) {
+  var tiers = _expoScaleForList();
+  if (!_expoClientMode || !tiers.length) {
     cp.style.display = "none";
     return;
   }
-  var tiers = _expoScale.slice().sort(function (a, b) {
-    return Number(a.desde) - Number(b.desde);
-  });
   var sub = _expoListSubtotal();
   var n = tiers.length;
   var curIdx = 0;
