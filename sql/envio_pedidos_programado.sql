@@ -6,13 +6,13 @@
 -- "procesar-pedidos-db" que arma Excel con los pedidos pendientes y lo manda
 -- por Gmail API.
 --
--- Cadena: enviar_pedidos_main() [cron 15:00 UTC = 12:00 ARG]
+-- Cadena: enviar_pedidos_main() [cron 15:30 UTC = 12:30 ARG]
 --       → postear_envio_pedidos('main', 0)
 --       → net.http_post a la Edge Function procesar-pedidos-db
 --       → la EF lee orders.sheets_payload pendientes, arma Excel, manda mail
 --       → sella orders.enviado_a_compras_at
 --
--- Retry: retry_procesar_pedidos() [cron cada 6 min entre 15:02 y 16:59 UTC]
+-- Retry: retry_procesar_pedidos() [cron cada 6 min entre 15:32 y 16:59 UTC]
 --       → resolver_envios_pedidos() (llena HTTP status de pg_net)
 --       → si no hubo éxito hoy en procesar_pedidos_log, reintenta hasta 10x
 --
@@ -146,8 +146,8 @@ begin
   -- Primero resolver cualquier HTTP pendiente
   perform public.resolver_envios_pedidos();
 
-  -- No reintentar antes de las 12:01 (el main sale a las 12:00)
-  if t_arg < time '12:01' then return; end if;
+  -- No reintentar antes de las 12:31 (el main sale a las 12:30)
+  if t_arg < time '12:31' then return; end if;
 
   -- Si ya hubo un ok o no_orders hoy, no hacer nada
   select count(*) into ok_today
@@ -181,17 +181,17 @@ $$;
 
 -- ─── 3. Cron jobs ───────────────────────────────────────────────────────────
 
--- Principal: 15:00 UTC = 12:00 ARG
+-- Principal: 15:30 UTC = 12:30 ARG (misma hora que LK)
 select cron.schedule(
   'procesar-pedidos-web',
-  '0 15 * * *',
+  '30 15 * * *',
   $$select public.enviar_pedidos_main();$$
 );
 
--- Retry: cada 6 minutos entre 15:02 y 16:59 UTC (12:02–13:59 ARG)
+-- Retry: cada 6 minutos entre 15:32 y 16:59 UTC (12:32–13:59 ARG)
 select cron.schedule(
   'retry-procesar-pedidos',
-  '2-59/6 15,16 * * *',
+  '32-59/6 15,16 * * *',
   $$select public.retry_procesar_pedidos();$$
 );
 
