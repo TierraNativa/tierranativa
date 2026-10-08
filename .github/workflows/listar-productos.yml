@@ -1,0 +1,32 @@
+name: Listar productos
+
+# Imprime en el log de la corrida código, activo y descripción de cada producto.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "claude/**"
+    paths:
+      - "listar-productos.js"
+      - ".github/workflows/listar-productos.yml"
+
+jobs:
+  listar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el repo
+        uses: actions/checkout@v4
+
+      - name: Instalar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Instalar dependencias
+        run: npm install @supabase/supabase-js dotenv
+
+      - name: Listar
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node listar-productos.js
