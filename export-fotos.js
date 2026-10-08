@@ -23,12 +23,22 @@
 
 const fs = require("fs");
 const path = require("path");
-const { createAdminClient } = require("./supabase-admin-client");
+require("dotenv").config();
+const { createClient } = require("@supabase/supabase-js");
+const { SUPABASE_URL } = require("./supabase-admin-client");
 
 const BUCKET = "products-images";
 const OUT = path.join(__dirname, "export");
+const BASE_IMG = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/`;
 
-const supabase = createAdminClient();
+// Con service_role se ven todos los productos (activos e inactivos). Sin ella
+// se usa la anon key publica de script.js: alcanza porque el bucket es
+// publico, pero RLS solo deja ver lo que ve el catalogo.
+const ANON_KEY = fs
+  .readFileSync(path.join(__dirname, "script.js"), "utf8")
+  .match(/sb_publishable_[A-Za-z0-9_-]+/)[0];
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(SUPABASE_URL, SERVICE_KEY || ANON_KEY);
 
 function parseImages(raw) {
   if (raw == null) return [];
@@ -88,9 +98,10 @@ async function fetchProducts() {
 }
 
 async function download(p) {
-  const { data, error } = await supabase.storage.from(BUCKET).download(p);
-  if (error) return null;
-  return Buffer.from(await data.arrayBuffer());
+  const url = BASE_IMG + p.split("/").map(encodeURIComponent).join("/");
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  return Buffer.from(await res.arrayBuffer());
 }
 
 async function main() {
@@ -98,8 +109,9 @@ async function main() {
   fs.mkdirSync(path.join(OUT, "principales"), { recursive: true });
   fs.mkdirSync(path.join(OUT, "todas"), { recursive: true });
 
+  console.log(SERVICE_KEY ? "Clave: service_role" : "Clave: anon (sin service_role)");
   const products = await fetchProducts();
-  console.log(`Productos en la tabla: ${products.length}\n`);
+  console.log(`Productos leidos: ${products.length}\n`);
 
   const filas = [["cod", "nombre", "activo", "fotos_bajadas", "fotos_fallidas"]];
   const usados = new Map();
