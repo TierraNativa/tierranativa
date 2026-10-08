@@ -20,3 +20,4 @@ desktop.ini
 # ...salvo la plantilla, que no tiene secretos y documenta las variables.
 # La negacion va DESPUES del patron que la excluye, si no git la ignora igual.
 !.env.example
+export/

@@ -1,0 +1,53 @@
+name: Exportar fotos
+
+# Se dispara a mano desde la pestaña "Actions" del repo (botón "Run workflow").
+# Baja las fotos originales de todos los productos y las deja como artefacto
+# descargable de la corrida (abajo de todo, en "Artifacts"). GitHub ya lo
+# entrega como .zip:
+#   fotos-principales.zip  -> {cod}.webp, una por producto
+#   fotos-todas.zip        -> {cod}/1.webp, 2.webp, ...
+#
+# Requiere el mismo secreto que "Generar miniaturas": SUPABASE_SERVICE_ROLE_KEY.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "claude/**"
+    paths:
+      - "export-fotos.js"
+      - ".github/workflows/exportar-fotos.yml"
+
+jobs:
+  exportar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el repo
+        uses: actions/checkout@v4
+
+      - name: Instalar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Instalar dependencias
+        run: npm install @supabase/supabase-js dotenv
+
+      - name: Bajar fotos
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node export-fotos.js
+
+      - name: Subir principales
+        uses: actions/upload-artifact@v4
+        with:
+          name: fotos-principales
+          path: export/principales
+          retention-days: 14
+
+      - name: Subir todas
+        uses: actions/upload-artifact@v4
+        with:
+          name: fotos-todas
+          path: export/todas
+          retention-days: 14
