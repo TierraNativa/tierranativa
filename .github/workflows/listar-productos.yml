@@ -1,6 +1,7 @@
 name: Listar productos
 
-# Imprime en el log de la corrida código, activo y descripción de cada producto.
+# Genera productos.tsv (código, activo, descripción de cada producto) y lo
+# commitea en la misma rama.
 
 on:
   workflow_dispatch:
@@ -10,6 +11,9 @@ on:
     paths:
       - "listar-productos.js"
       - ".github/workflows/listar-productos.yml"
+
+permissions:
+  contents: write
 
 jobs:
   listar:
@@ -29,4 +33,12 @@ jobs:
       - name: Listar
         env:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: node listar-productos.js
+        run: node listar-productos.js | grep '^PROD' | cut -f2- > productos.tsv
+
+      - name: Commitear productos.tsv
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add productos.tsv
+          git diff --cached --quiet || git commit -m "productos.tsv actualizado"
+          git push
