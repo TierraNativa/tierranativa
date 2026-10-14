@@ -15516,3 +15516,27 @@ body.expo-operator .mpb-actions > #openFiltersBtn .mpb-btn-ico {
     justify-content: center;
   }
 }
+
+/* Desktop (2 columnas): la tabla de productos termina exactamente donde
+   termina la columna izquierda (abajo del cuadro de Total del pedido).
+   contain:size hace que la col-right no aporte alto propio: la fila del
+   grid la define la izquierda y la derecha se estira a ese alto. La tabla
+   scrollea por dentro. */
+@media (min-width: 901px) {
+  #carrito .cart-2col > .cart-col-right {
+    contain: size;
+    align-self: stretch;
+    max-height: none;
+    min-height: 0;
+  }
+  #carrito .cart-2col .cart-col-right > .cart-layout {
+    display: flex !important;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  #carrito .cart-2col #cart {
+    max-height: none !important;
+    height: auto;
+    margin-bottom: 0 !important;
+  }
+}
