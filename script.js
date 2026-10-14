@@ -3398,6 +3398,7 @@ async function logout() {
     isAdmin = false;
     customerProfile = null;
     deliveryChoice = { slot: "", label: "" };
+    resetCheckoutExtras();
     cart.splice(0, cart.length);
     localStorage.removeItem(CART_LS_KEY);
     localStorage.removeItem("is_logged");
@@ -7305,10 +7306,171 @@ async function loadDeliveryOptions(retry = 0) {
   // Sincronizar popup del custom dropdown con las options recién cargadas
   if (typeof _csSyncPopupFromHidden === "function") _csSyncPopupFromHidden(sel);
 
+  // Expreso por sucursal: consulta aparte para que, si falla, no se pierdan
+  // las direcciones (las columnas nombre/direccion_expreso son opcionales).
+  cargarExpresoPorSlot(customerId);
+
   updateCart();
 
   // Refrescar info extra del vendedor 10006 (sucursales recién cargadas).
   if (typeof updateVendor10006Info === "function") updateVendor10006Info();
+}
+
+// =============================
+// Checkout: expreso de la sucursal + observaciones del pedido
+// =============================
+let _expresoPorSlot = {}; // { slot: { nombre, direccion } }
+let _expresoOverride = null; // { slot, nombre, direccion } — solo para este pedido
+let orderObservaciones = "";
+
+async function cargarExpresoPorSlot(customerId) {
+  _expresoPorSlot = {};
+  if (!customerId) return;
+  try {
+    const { data, error } = await supabaseClient
+      .from("customer_delivery_addresses")
+      .select("slot,zona_expreso,nombre_expreso,direccion_expreso")
+      .eq("customer_id", customerId);
+    if (error) throw error;
+    (data || []).forEach((r) => {
+      const nombre = String(r.nombre_expreso || r.zona_expreso || "").trim();
+      if (!nombre) return;
+      _expresoPorSlot[String(r.slot)] = {
+        nombre,
+        direccion: String(r.direccion_expreso || "").trim(),
+      };
+    });
+  } catch (e) {
+    console.warn("cargarExpresoPorSlot error:", e);
+  }
+  renderExpresoCard();
+}
+
+// Expreso vigente para la sucursal elegida (el override pisa al de la sucursal).
+function getExpresoActual() {
+  const slot = String(
+    deliveryChoice?.slot || document.getElementById("shippingSelect")?.value || "",
+  );
+  if (!slot || slot === "__add__") return null;
+  if (_expresoOverride && _expresoOverride.slot === slot) return _expresoOverride;
+  if (_expresoPorSlot[slot]) return _expresoPorSlot[slot];
+  // Fallback: zona_expreso que ya viene en la option del select.
+  const opt = document.querySelector(
+    `#shippingSelect option[value="${CSS.escape(slot)}"]`,
+  );
+  const zona = String(opt?.dataset?.zonaExpreso || "").trim();
+  return zona ? { nombre: zona, direccion: "" } : { nombre: "", direccion: "" };
+}
+
+function renderExpresoCard() {
+  const card = document.getElementById("expresoCard");
+  if (!card) return;
+  const exp = getExpresoActual();
+  if (!exp) {
+    card.hidden = true;
+    return;
+  }
+  card.hidden = false;
+  card.classList.toggle("is-empty", !exp.nombre);
+  card.classList.toggle("is-override", !!(_expresoOverride && exp === _expresoOverride));
+  document.getElementById("expresoNombre").textContent =
+    exp.nombre || "Sin expreso asignado";
+  const dirEl = document.getElementById("expresoDir");
+  dirEl.textContent =
+    _expresoOverride && exp === _expresoOverride
+      ? (exp.direccion ? exp.direccion + " · " : "") + "solo para este pedido"
+      : exp.direccion;
+  dirEl.hidden = !dirEl.textContent;
+  card.querySelector(".expreso-cambiar").textContent = exp.nombre
+    ? "Cambiar"
+    : "Elegir";
+}
+
+function openExpresoModal() {
+  const exp = getExpresoActual();
+  if (!exp) return;
+  const inp = document.getElementById("expresoInput");
+  inp.value = exp.nombre || "";
+  document.getElementById("expresoModal").hidden = false;
+  cargarExpresosCache();
+  setTimeout(() => inp.select(), 0);
+}
+
+function closeExpresoModal() {
+  document.getElementById("expresoModal").hidden = true;
+}
+
+async function onExpresoCambioInput() {
+  const inp = document.getElementById("expresoInput");
+  const dl = document.getElementById("expresoInputList");
+  const q = String(inp.value || "").trim().toLowerCase();
+  if (q.length < 2) {
+    dl.innerHTML = "";
+    return;
+  }
+  const lista = await cargarExpresosCache();
+  dl.innerHTML = lista
+    .filter((e) => String(e.razon_social || "").toLowerCase().includes(q))
+    .slice(0, 30)
+    .map((e) => `<option value="${escapeHtml(e.razon_social || "")}"></option>`)
+    .join("");
+}
+
+function saveExpresoModal() {
+  const slot = String(
+    deliveryChoice?.slot || document.getElementById("shippingSelect")?.value || "",
+  );
+  const nombre = String(document.getElementById("expresoInput").value || "").trim();
+  if (!slot) return closeExpresoModal();
+  const original = _expresoPorSlot[slot];
+  if (!nombre || (original && original.nombre.toLowerCase() === nombre.toLowerCase())) {
+    // Vacío o igual al de la sucursal → volver al original.
+    _expresoOverride = null;
+  } else {
+    const match = (_expresosCache || []).find(
+      (e) => String(e.razon_social || "").trim().toLowerCase() === nombre.toLowerCase(),
+    );
+    const direccion = match
+      ? [match.domicilio, match.localidad].filter(Boolean).join(", ")
+      : "";
+    _expresoOverride = { slot, nombre, direccion };
+  }
+  closeExpresoModal();
+  renderExpresoCard();
+}
+
+function openObsModal() {
+  const inp = document.getElementById("obsInput");
+  inp.value = orderObservaciones;
+  document.getElementById("obsModal").hidden = false;
+  setTimeout(() => inp.focus(), 0);
+}
+
+function closeObsModal() {
+  document.getElementById("obsModal").hidden = true;
+}
+
+function saveObsModal() {
+  orderObservaciones = String(document.getElementById("obsInput").value || "").trim();
+  closeObsModal();
+  renderObsBtn();
+}
+
+function renderObsBtn() {
+  const btn = document.getElementById("obsBtn");
+  if (!btn) return;
+  btn.classList.toggle("has-obs", !!orderObservaciones);
+  document.getElementById("obsBtnLabel").textContent = orderObservaciones
+    ? "Observaciones ✓"
+    : "Observaciones";
+  btn.title = orderObservaciones || "";
+}
+
+function resetCheckoutExtras() {
+  _expresoOverride = null;
+  orderObservaciones = "";
+  renderObsBtn();
+  renderExpresoCard();
 }
 
 // =============================
@@ -8834,6 +8996,8 @@ function updateCart() {
 
   const t = calcTotals();
 
+  renderExpresoCard();
+
   if (!cart.length) {
     cartDiv.innerHTML = `
       <div class="cart-empty">
@@ -9923,6 +10087,10 @@ async function _submitSingleOrder(
     d: dStatus,
     pp: ppStatus,
     order_total: finalTotal,
+    expreso: deliveryChoiceSnapshot.expreso || "",
+    direccion_expreso: deliveryChoiceSnapshot.direccionExpreso || "",
+    expreso_cambiado: !!deliveryChoiceSnapshot.expresoCambiado,
+    observaciones: deliveryChoiceSnapshot.observaciones || "",
     source: "Web",
     mode: editOrderId ? "edit" : "new",
     items: itemsPayload.map(function (it) {
@@ -9984,6 +10152,9 @@ async function _submitSingleOrder(
       deliveryChoiceSnapshot.label ||
       "",
     barrio_entrega: deliveryChoiceSnapshot.zonaExpreso || "",
+    expreso: deliveryChoiceSnapshot.expreso || "",
+    direccion_expreso: deliveryChoiceSnapshot.direccionExpreso || "",
+    observaciones: deliveryChoiceSnapshot.observaciones || "",
     empresa: "LK",
     is_promo: isPromo,
     extra_discount: extraRate,
@@ -10104,6 +10275,14 @@ async function submitOrder() {
       direccionEntrega: deliveryChoice.direccionEntrega || "",
       zonaExpreso: deliveryChoice.zonaExpreso || "",
     };
+    // Expreso (de la sucursal o el elegido con "Cambiar") + observaciones
+    var expresoActual = getExpresoActual() || {};
+    deliveryChoiceSnapshot.expreso = String(expresoActual.nombre || "");
+    deliveryChoiceSnapshot.direccionExpreso = String(expresoActual.direccion || "");
+    deliveryChoiceSnapshot.expresoCambiado = !!(
+      _expresoOverride && expresoActual === _expresoOverride
+    );
+    deliveryChoiceSnapshot.observaciones = orderObservaciones;
 
     // ---- Submit pedido regular (X) ----
     var regularResult = null;
@@ -10257,6 +10436,7 @@ async function submitOrder() {
     });
     var payLaterBtn = $("payLaterBtn");
     if (payLaterBtn) payLaterBtn.classList.remove("selected", "active");
+    resetCheckoutExtras();
 
     updateCart();
     renderProducts();
@@ -12989,6 +13169,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   window.showSection = showSection;
+  window.openObsModal = openObsModal;
+  window.closeObsModal = closeObsModal;
+  window.saveObsModal = saveObsModal;
+  window.openExpresoModal = openExpresoModal;
+  window.closeExpresoModal = closeExpresoModal;
+  window.saveExpresoModal = saveExpresoModal;
+  window.onExpresoCambioInput = onExpresoCambioInput;
   window.goToProductsTop = goToProductsTop;
   window.openLogin = openLogin;
   window.closeLogin = closeLogin;

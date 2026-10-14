@@ -18,8 +18,8 @@
       name="description"
       content="Catálogo mayorista de Tierra Nativa SA. Cuadros, portarretratos y objetos de decoración. Consultá precios y hacé tu pedido online."
     />
-    <link rel="stylesheet" href="css/styles.css?v=2750" />
-    <link rel="stylesheet" href="css/analisis-venta-cliente.css?v=2750" />
+    <link rel="stylesheet" href="css/styles.css?v=2751" />
+    <link rel="stylesheet" href="css/analisis-venta-cliente.css?v=2751" />
     <link rel="icon" type="image/png" href="img/favicon.png" />
     <link rel="icon" href="img/favicon.png" />
     <link rel="shortcut icon" href="img/favicon.png" />
@@ -1058,6 +1058,7 @@
             Pedido · Total: $<span id="pedidoTotalHeader">0</span>
             <span class="iva-tag">+ IVA</span>
           </h2>
+          <div class="confirm-row">
           <button
             id="submitOrderBtn"
             class="submit-order"
@@ -1067,6 +1068,16 @@
           >
             Confirmar pedido
           </button>
+          <button
+            id="obsBtn"
+            class="obs-btn"
+            type="button"
+            onclick="openObsModal()"
+          >
+            <span aria-hidden="true">✎</span>
+            <span id="obsBtnLabel">Observaciones</span>
+          </button>
+          </div>
           <div id="expoOrderGate" class="expo-order-gate" hidden></div>
           <div id="orderStatus" class="order-status" aria-live="polite" hidden></div>
         </div>
@@ -1099,6 +1110,18 @@
           <select id="shippingSelect" class="ship-select">
             <option value="" selected disabled hidden>Elegir Sucursal</option>
           </select>
+          <!-- Expreso de la sucursal elegida (se puede cambiar solo para este pedido) -->
+          <div id="expresoCard" class="expreso-card" hidden>
+            <span class="expreso-icon" aria-hidden="true">🚚</span>
+            <div class="expreso-info">
+              <div class="expreso-k">Expreso</div>
+              <div id="expresoNombre" class="expreso-nombre"></div>
+              <div id="expresoDir" class="expreso-dir"></div>
+            </div>
+            <button type="button" class="expreso-cambiar" onclick="openExpresoModal()">
+              Cambiar
+            </button>
+          </div>
           <div class="ship-hint">
             Seleccioná una dirección para poder confirmar el pedido.
           </div>
@@ -1228,6 +1251,46 @@
         </div>
       </div><!-- /.cart-2col -->
     </section>
+
+    <!-- MODAL: OBSERVACIONES DEL PEDIDO -->
+    <div id="obsModal" class="ck-modal" hidden onclick="if(event.target===this)closeObsModal()">
+      <div class="ck-modal-box" role="dialog" aria-modal="true" aria-labelledby="obsModalTitle">
+        <h3 id="obsModalTitle" class="ck-modal-title">Observaciones del pedido</h3>
+        <textarea
+          id="obsInput"
+          class="ck-modal-input"
+          rows="5"
+          maxlength="500"
+          placeholder="Ej: entregar por la tarde, llamar antes de llegar…"
+        ></textarea>
+        <div class="ck-modal-actions">
+          <button type="button" class="ck-modal-cancel" onclick="closeObsModal()">Cancelar</button>
+          <button type="button" class="ck-modal-ok" onclick="saveObsModal()">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: CAMBIAR EXPRESO (solo para este pedido) -->
+    <div id="expresoModal" class="ck-modal" hidden onclick="if(event.target===this)closeExpresoModal()">
+      <div class="ck-modal-box" role="dialog" aria-modal="true" aria-labelledby="expresoModalTitle">
+        <h3 id="expresoModalTitle" class="ck-modal-title">Cambiar expreso</h3>
+        <p class="ck-modal-hint">El cambio aplica solo a este pedido. La sucursal guardada no se modifica.</p>
+        <input
+          id="expresoInput"
+          class="ck-modal-input"
+          type="text"
+          list="expresoInputList"
+          autocomplete="off"
+          placeholder="Escribí el nombre del expreso"
+          oninput="onExpresoCambioInput()"
+        />
+        <datalist id="expresoInputList"></datalist>
+        <div class="ck-modal-actions">
+          <button type="button" class="ck-modal-cancel" onclick="closeExpresoModal()">Cancelar</button>
+          <button type="button" class="ck-modal-ok" onclick="saveExpresoModal()">Usar este expreso</button>
+        </div>
+      </div>
+    </div>
 
     <!-- PANTALLA FINAL: PEDIDO CONFIRMADO -->
     <section id="pedidoConfirmado" class="section">
@@ -1805,10 +1868,10 @@
     </button>
 
     <!-- Tu JS -->
-    <script src="./version.js?v=2750"></script>
-    <script src="script.js?v=2750"></script>
+    <script src="./version.js?v=2751"></script>
+    <script src="script.js?v=2751"></script>
     <!-- Análisis Venta Cliente embebido en #perfil (modo customer view) -->
-    <script src="analisis-venta-cliente.js?v=2750"></script>
+    <script src="analisis-venta-cliente.js?v=2751"></script>
     <!-- ==================== MODALES EXPO ==================== -->
     <!-- Modal EXPO: Elegir cliente -->
     <div id="expoPickModal" class="modal hidden" aria-hidden="true">
