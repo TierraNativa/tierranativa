@@ -248,3 +248,13 @@ de texto (`2.7.0-miniaturas`) aborta el commit.
   tiene declaradas). Si ese archivo falta, la carga cae a dos CDN y, si esos
   tampoco responden, a un fallback simplificado que son **rectángulos, no
   Argentina**.
+
+## Planify (registro de tareas de las sesiones de Claude)
+
+- Proyecto Supabase `hrxfctzncixxqmpfhskv`, schema `planify` (no es el backend
+  del sitio).
+- Trabajo → crear tarea al empezar en `planify.tasks` (nombre ≤60, nota 1-3
+  líneas, `done=false`); consulta → no. Al cumplir el objetivo, preguntar si falta
+  algo y recién ahí `done=true`.
+- Thomas Loekemeyer → `employee_id` 20, prefijo "Th ". Otros empleados:
+  `SELECT id,nombre FROM planify.employees WHERE activo AND nombre ILIKE '%<apellido>%';`
