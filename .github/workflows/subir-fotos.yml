@@ -1,0 +1,56 @@
+name: Subir fotos
+
+# Se dispara a mano desde Actions -> "Subir fotos" -> Run workflow.
+# Reemplaza en el bucket products-images las fotos de cada código que haya en
+# la carpeta fotos-nuevas/{cod}/ del repo. Ver subir-fotos.js.
+#
+# Modo "simular" (por defecto): solo muestra qué se borraría y qué se subiría.
+# Modo "aplicar": hace backup (queda como artefacto descargable de la corrida),
+# borra las fotos viejas de esos códigos y sube las nuevas.
+#
+# Usa el mismo secreto que "Generar miniaturas": SUPABASE_SERVICE_ROLE_KEY.
+
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "simular = no cambia nada / aplicar = backup + borrar + subir"
+        type: choice
+        options: [simular, aplicar]
+        default: simular
+      actualizar_db:
+        description: "Además dejar products.images con las fotos nuevas"
+        type: boolean
+        default: false
+
+jobs:
+  subir:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el repo
+        uses: actions/checkout@v4
+
+      - name: Instalar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Instalar dependencias
+        run: npm install @supabase/supabase-js dotenv
+
+      - name: Subir fotos
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: >
+          node subir-fotos.js
+          ${{ inputs.modo == 'aplicar' && '--run' || '' }}
+          ${{ inputs.actualizar_db && '--db' || '' }}
+
+      - name: Guardar backup de las fotos viejas
+        if: ${{ inputs.modo == 'aplicar' && always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-fotos-viejas
+          path: backup-images/
+          if-no-files-found: ignore
+          retention-days: 90
