@@ -2294,7 +2294,7 @@ const IMG_PARAMS = ``;
  * Este bloque se recupero del script.js propio de Elias (commit 3dad03e),
  * que ya resolvia esto bien, y se reinserta sobre el codigo portado.
  ***********************/
-const IMG_VERSION = "9999-12-31-2"; // cambiar cuando se actualicen imagenes
+const IMG_VERSION = "2026-11-05"; // cambiar cuando se actualicen imagenes
 
 const productImagesCache = new Map();
 
